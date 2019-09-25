@@ -114,8 +114,13 @@ LRESULT CALLBACK WindowHelper::ClientManager::WindowMessageHandler(HWND hwnd, UI
 		case WM_LBUTTONDOWN:
 			BroadcastKeyPress(WM_NCHITTEST, 0, lParam, Protocol::SEND);
 			BroadcastKeyPress(uMsg, wParam, lParam, Protocol::POST);
-			BroadcastKeyPress(uMsg, wParam, lParam, Protocol::POST);
+			BroadcastKeyPress(WM_LBUTTONUP, wParam, lParam, Protocol::POST);
 			return 0;
+
+		case WM_RBUTTONDOWN:
+			BroadcastKeyPress(WM_NCHITTEST, 0, lParam, Protocol::SEND);
+			BroadcastKeyPress(uMsg, wParam, lParam, Protocol::POST);
+			BroadcastKeyPress(WM_RBUTTONUP, wParam, lParam, Protocol::POST);
 
 		case WM_ACTIVATE:
 		{
