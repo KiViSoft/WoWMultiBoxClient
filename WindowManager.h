@@ -106,7 +106,9 @@ namespace WindowHelper
 		std::wstring mClientName;
 		std::wstring mClientClass;
 		std::vector<Client> mClients;
+		State mState;
 		void BroadcastKeyPress(UINT uMsg, WPARAM wParam, LPARAM lParam, Protocol proto);
+		void SendKeyPressToTop(UINT uMsg, WPARAM wParam, LPARAM lParam, Protocol proto);
 		LRESULT CALLBACK WindowMessageHandler(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 		
 		static BOOL CALLBACK FindClientWindowHandles(HWND hwnd, LPARAM lparam);

@@ -25,6 +25,19 @@ void WindowHelper::ClientManager::BroadcastKeyPress(UINT uMsg, WPARAM wParam, LP
 	}
 }
 
+void WindowHelper::ClientManager::SendKeyPressToTop(UINT uMsg, WPARAM wParam, LPARAM lParam, Protocol proto)
+{
+	const auto& client = mClients.begin();
+	if (proto == Protocol::POST)
+	{
+		PostMessage(client->getWindow().getWindowHandle(), uMsg, wParam, lParam);
+	}
+	else if (proto == Protocol::SEND)
+	{
+		SendMessage(client->getWindow().getWindowHandle(), uMsg, wParam, lParam);
+	}
+}
+
 LRESULT WindowHelper::ClientManager::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
 	ClientManager* mngr = reinterpret_cast<ClientManager*>(GetWindowLongPtr(hwnd, GWLP_USERDATA));
@@ -75,22 +88,46 @@ LRESULT CALLBACK WindowHelper::ClientManager::WindowMessageHandler(HWND hwnd, UI
 	case WM_KEYDOWN:
 	{
 			// press p to quit
+		if (wParam == 0x4B)
+		{
+			PostQuitMessage(0);
+			return 0;
+		}
+		else if (mState == State::PLAYING && wParam != 0x50)
+		{
+			BroadcastKeyPress(uMsg, wParam, lParam, Protocol::SEND);
+			return 0;
+		}
+		else if (mState == State::PAUSED && wParam != 0x50)
+		{
+			SendKeyPressToTop(uMsg, wParam, lParam, Protocol::SEND);
+			return 0;
+		}
+
+		return 0;
+
+	}
+
+		case WM_KEYUP:
+		{
 			if (wParam == 0x50)
 			{
-				PostQuitMessage(0);
+				if (mState == State::PLAYING)
+				{
+					mState = State::PAUSED;
+				}
+				else
+				{
+					mState = State::PLAYING;
+				}
+
+				return 0;
 			}
 			else
 			{
 				BroadcastKeyPress(uMsg, wParam, lParam, Protocol::SEND);
+				return 0;
 			}
-
-			return 0;
-		}
-
-		case WM_KEYUP:
-		{
-			BroadcastKeyPress(uMsg, wParam, lParam, Protocol::SEND);
-			return 0;
 		}
 
 		case WM_NCHITTEST:
@@ -112,15 +149,22 @@ LRESULT CALLBACK WindowHelper::ClientManager::WindowMessageHandler(HWND hwnd, UI
 		}
 
 		case WM_LBUTTONDOWN:
-			BroadcastKeyPress(WM_NCHITTEST, 0, lParam, Protocol::SEND);
-			BroadcastKeyPress(uMsg, wParam, lParam, Protocol::POST);
-			BroadcastKeyPress(WM_LBUTTONUP, wParam, lParam, Protocol::POST);
-			return 0;
+			if (mState == State::PLAYING)
+			{
+				BroadcastKeyPress(WM_NCHITTEST, 0, lParam, Protocol::SEND);
+				BroadcastKeyPress(uMsg, wParam, lParam, Protocol::POST);
+				BroadcastKeyPress(WM_LBUTTONUP, wParam, lParam, Protocol::POST);
+				return 0;
+			}
 
 		case WM_RBUTTONDOWN:
-			BroadcastKeyPress(WM_NCHITTEST, 0, lParam, Protocol::SEND);
-			BroadcastKeyPress(uMsg, wParam, lParam, Protocol::POST);
-			BroadcastKeyPress(WM_RBUTTONUP, wParam, lParam, Protocol::POST);
+			if (mState == State::PLAYING)
+			{
+				BroadcastKeyPress(WM_NCHITTEST, 0, lParam, Protocol::SEND);
+				BroadcastKeyPress(uMsg, wParam, lParam, Protocol::POST);
+				BroadcastKeyPress(WM_RBUTTONUP, wParam, lParam, Protocol::POST);
+				return 0;
+			}
 
 		case WM_ACTIVATE:
 		{
@@ -167,7 +211,7 @@ LRESULT CALLBACK WindowHelper::ClientManager::WindowMessageHandler(HWND hwnd, UI
 	return DefWindowProc(hwnd, uMsg, wParam, lParam);
 }
 
-WindowHelper::ClientManager::ClientManager(std::wstring client_name, std::wstring client_class) : mClientName(client_name), mClientClass(client_class)
+WindowHelper::ClientManager::ClientManager(std::wstring client_name, std::wstring client_class) : mClientName(client_name), mClientClass(client_class), mState(State::PLAYING)
 {
 }
 
@@ -213,3 +257,4 @@ Window Client::getWindow() const
 {
 	return mClientWindow;
 }
+
